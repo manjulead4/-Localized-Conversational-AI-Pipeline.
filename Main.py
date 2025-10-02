@@ -18,7 +18,7 @@ except ImportError:
 API_KEY = "AIzaSyD_aklgpblibEKUE-Rdge4Ugj4IQ_Z78Hs"
 LLM_MODEL = 'gemini-2.5-flash-preview-05-20'
 TTS_MODEL = 'gemini-2.5-flash-preview-tts'
-TELUGU_VOICE = "Kore" 
+TELUGU_VOICE = "Kore"
 
 try:
     client = genai.Client(api_key=API_KEY)
@@ -28,14 +28,13 @@ except Exception:
 
 
 def pcm_to_wav_bytes(pcm_data: bytes, sample_rate: int = 24000, num_channels: int = 1, bits_per_sample: int = 16) -> bytes:
-    
     byte_rate = sample_rate * num_channels * (bits_per_sample // 8)
     block_align = num_channels * (bits_per_sample // 8)
-    
+
     wav_io = io.BytesIO()
 
     wav_io.write(b'RIFF')
-    wav_io.write(struct.pack('<I', 36 + len(pcm_data))) 
+    wav_io.write(struct.pack('<I', 36 + len(pcm_data)))
     wav_io.write(b'WAVE')
 
     wav_io.write(b'fmt ')
@@ -55,7 +54,6 @@ def pcm_to_wav_bytes(pcm_data: bytes, sample_rate: int = 24000, num_channels: in
 
 @st.cache_data(show_spinner=False)
 def get_llm_response(query: str) -> str:
-    
     system_instruction = "Act as a helpful and friendly assistant. Respond concisely and entirely in natural, conversational Telugu (India) using the input provided."
 
     try:
@@ -73,7 +71,6 @@ def get_llm_response(query: str) -> str:
         return f"An unexpected error occurred during LLM call: {e}"
 
 def get_tts_audio_data(text: str) -> tuple[Optional[bytes], int]:
-    
     try:
         response = client.models.generate_content(
             model=TTS_MODEL,
@@ -95,16 +92,16 @@ def get_tts_audio_data(text: str) -> tuple[Optional[bytes], int]:
                 }
             }
         )
-        
+
         audio_part = response.candidates[0].content.parts[0]
         pcm_data = audio_part.inline_data.data
         mime_type = audio_part.inline_data.mime_type
-        
+
         rate_match = re.search(r'rate=(\d+)', mime_type)
         sample_rate = int(rate_match.group(1)) if rate_match else 24000
-        
+
         return pcm_data, sample_rate
-        
+
     except APIError as e:
         st.error(f"TTS API Error: {e}")
         return None, 0
@@ -115,12 +112,9 @@ def get_tts_audio_data(text: str) -> tuple[Optional[bytes], int]:
 
 def main():
     st.set_page_config(page_title="Telugu Conversational AI", layout="centered")
-    
+
     st.title("🗣️ తెలుగు సంభాషణ AI పైప్‌లైన్")
     st.markdown("ASR (Simulation) → LLM → TTS Pipeline using Gemini")
-    st.markdown("---")
-
-    st.info("ప్రాజెక్టును అమలు చేయడానికి: `pip install streamlit google-genai` మరియు `streamlit run streamlit_app.py` అని అమలు చేయండి.")
     st.markdown("---")
 
     user_input = st.text_area(
@@ -135,9 +129,9 @@ def main():
             return
 
         with st.spinner("LLM ప్రాసెసింగ్ & TTS జనరేషన్ జరుగుతోంది..."):
-            
+
             llm_response_telugu = get_llm_response(user_input)
-            
+
             st.success("✅ LLM ప్రతిస్పందన సిద్ధంగా ఉంది:")
             st.markdown(f"**LLM జవాబు:** *{llm_response_telugu}*")
 
@@ -149,9 +143,9 @@ def main():
 
             if not pcm_data:
                 return
-            
+
             wav_bytes = pcm_to_wav_bytes(pcm_data, sample_rate=sample_rate)
-            
+
             st.success("🔊 ఆడియో ప్లేబ్యాక్:")
             st.audio(wav_bytes, format='audio/wav', start_time=0)
 
